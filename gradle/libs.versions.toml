@@ -1,7 +1,7 @@
 [versions]
 agp = "8.7.3"
 android-compileSdk = "35"
-android-minSdk = "24"
+android-minSdk = "26"
 android-targetSdk = "35"
 androidx-activity = "1.10.1"
 androidx-appcompat = "1.7.0"
@@ -13,6 +13,9 @@ androidx-testExt = "1.2.1"
 composeMultiplatform = "1.8.1"
 junit = "4.13.2"
 kotlin = "2.1.21"
+
+multipaz = "0.92.0-pre.13.1f028934"
+
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -26,6 +29,11 @@ androidx-constraintlayout = { module = "androidx.constraintlayout:constraintlayo
 androidx-activity-compose = { module = "androidx.activity:activity-compose", version.ref = "androidx-activity" }
 androidx-lifecycle-viewmodel = { module = "org.jetbrains.androidx.lifecycle:lifecycle-viewmodel", version.ref = "androidx-lifecycle" }
 androidx-lifecycle-runtimeCompose = { module = "org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidx-lifecycle" }
+
+multipaz = { group = "org.multipaz", name = "multipaz", version.ref = "multipaz" }
+multipaz-models = { group = "org.multipaz", name = "multipaz-models", version.ref = "multipaz" }
+multipaz-compose = { group = "org.multipaz", name = "multipaz-compose", version.ref = "multipaz" }
+multipaz-doctypes = { group = "org.multipaz", name = "multipaz-doctypes", version.ref = "multipaz" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
