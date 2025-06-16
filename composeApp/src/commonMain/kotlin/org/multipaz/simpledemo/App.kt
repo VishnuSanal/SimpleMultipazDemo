@@ -1,42 +1,191 @@
 package org.multipaz.simpledemo
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarDuration
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import org.jetbrains.compose.resources.painterResource
+import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.datetime.Clock
+import kotlinx.io.bytestring.encodeToByteString
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import org.multipaz.asn1.ASN1Integer
+import org.multipaz.crypto.Algorithm
+import org.multipaz.crypto.Crypto
+import org.multipaz.crypto.EcCurve
+import org.multipaz.crypto.X500Name
+import org.multipaz.crypto.X509CertChain
+import org.multipaz.document.DocumentStore
+import org.multipaz.document.buildDocumentStore
+import org.multipaz.documenttype.DocumentTypeRepository
+import org.multipaz.documenttype.knowntypes.DrivingLicense
+import org.multipaz.mdoc.util.MdocUtil
+import org.multipaz.securearea.CreateKeySettings
+import org.multipaz.securearea.SecureArea
+import org.multipaz.securearea.SecureAreaRepository
+import org.multipaz.storage.Storage
+import kotlin.time.Duration.Companion.days
 
-import simplemultipazdemo.composeapp.generated.resources.Res
-import simplemultipazdemo.composeapp.generated.resources.compose_multiplatform
+private lateinit var snackbarHostState: SnackbarHostState
+
+lateinit var storage: Storage
+lateinit var secureArea: SecureArea
+lateinit var secureAreaRepository: SecureAreaRepository
+
+lateinit var documentTypeRepository: DocumentTypeRepository
+lateinit var documentStore: DocumentStore
+
+private fun showToast(message: String) {
+    println("vishnu: $message")
+    CoroutineScope(Dispatchers.Main).launch {
+        when (snackbarHostState.showSnackbar(
+            message = message,
+            actionLabel = "OK",
+            duration = SnackbarDuration.Short,
+        )) {
+            SnackbarResult.Dismissed -> {
+            }
+
+            SnackbarResult.ActionPerformed -> {
+            }
+        }
+    }
+}
 
 @Composable
 @Preview
 fun App() {
     MaterialTheme {
-        var showContent by remember { mutableStateOf(false) }
-        Column(
-            modifier = Modifier
-                .safeContentPadding()
-                .fillMaxSize(),
-            horizontalAlignment = Alignment.CenterHorizontally,
-        ) {
-            Button(onClick = { showContent = !showContent }) {
-                Text("Click me!")
-            }
-            AnimatedVisibility(showContent) {
-                val greeting = remember { Greeting().greet() }
-                Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                    Image(painterResource(Res.drawable.compose_multiplatform), null)
-                    Text("Compose: $greeting")
+        snackbarHostState = remember { SnackbarHostState() }
+
+        Scaffold(
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
+        ) { innerPadding ->
+
+            val coroutineScope = rememberCoroutineScope()
+
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(50.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+            ) {
+
+                Button(onClick = {
+                    coroutineScope.launch {
+                        try {
+
+                            storage = org.multipaz.util.Platform.getNonBackedUpStorage()
+                            secureArea = org.multipaz.util.Platform.getSecureArea(storage)
+                            secureAreaRepository =
+                                SecureAreaRepository.Builder().add(secureArea).build()
+
+                            showToast("Created SecureArea successfully")
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            showToast("Create SecureArea")
+                        }
+                    }
+                }) {
+                    Text("Create SecureArea")
+                }
+
+                Button(onClick = {
+                    coroutineScope.launch {
+                        try {
+
+                            documentTypeRepository = DocumentTypeRepository().apply {
+                                addDocumentType(DrivingLicense.getDocumentType())
+                            }
+
+                            documentStore = buildDocumentStore(
+                                storage = storage, secureAreaRepository = secureAreaRepository
+                            ) {}
+
+                            showToast("Initialized DocumentStore successfully")
+
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            showToast("Initialize DocumentStore failed")
+                        }
+                    }
+                }) {
+                    Text("Initialize DocumentStore")
+                }
+
+                Button(onClick = {
+                    coroutineScope.launch {
+                        try {
+
+                            val document = documentStore.createDocument(
+                                displayName = "Erika's Driving License",
+                                typeDisplayName = "Utopia Driving License",
+                            )
+
+                            val now = Clock.System.now()
+                            val signedAt = now
+                            val validFrom = now
+                            val validUntil = now + 365.days
+
+                            val iacaKey = Crypto.createEcPrivateKey(EcCurve.P256)
+                            val iacaCert = MdocUtil.generateIacaCertificate(
+                                iacaKey = iacaKey,
+                                subject = X500Name.fromName(name = "CN=Test IACA Key"),
+                                serial = ASN1Integer.fromRandom(numBits = 128),
+                                validFrom = validFrom,
+                                validUntil = validUntil,
+                                issuerAltNameUrl = "https://issuer.example.com",
+                                crlUrl = "https://issuer.example.com/crl"
+                            )
+
+                            val dsKey = Crypto.createEcPrivateKey(EcCurve.P256)
+                            val dsCert = MdocUtil.generateDsCertificate(
+                                iacaCert = iacaCert,
+                                iacaKey = iacaKey,
+                                dsKey = dsKey.publicKey,
+                                subject = X500Name.fromName(name = "CN=Test DS Key"),
+                                serial = ASN1Integer.fromRandom(numBits = 128),
+                                validFrom = validFrom,
+                                validUntil = validUntil
+                            )
+
+                            val mdocCredential =
+                                DrivingLicense.getDocumentType().createMdocCredentialWithSampleData(
+                                    document = document,
+                                    secureArea = secureArea,
+                                    createKeySettings = CreateKeySettings(
+                                        algorithm = Algorithm.ESP256,
+                                        nonce = "Challenge".encodeToByteString(),
+                                        userAuthenticationRequired = true
+                                    ),
+                                    dsKey = dsKey,
+                                    dsCertChain = X509CertChain(listOf(dsCert)),
+                                    signedAt = signedAt,
+                                    validFrom = validFrom,
+                                    validUntil = validUntil,
+                                )
+
+                            showToast("mDoc created successfully")
+
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            showToast("Create MDOC failed")
+                        }
+                    }
+                }) {
+                    Text("Create mDoc")
                 }
             }
         }
