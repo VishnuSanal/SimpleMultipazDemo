@@ -3,6 +3,8 @@ package org.multipaz.simpledemo
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -12,6 +14,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -29,6 +32,7 @@ import org.multipaz.crypto.Crypto
 import org.multipaz.crypto.EcCurve
 import org.multipaz.crypto.X500Name
 import org.multipaz.crypto.X509CertChain
+import org.multipaz.document.Document
 import org.multipaz.document.DocumentStore
 import org.multipaz.document.buildDocumentStore
 import org.multipaz.documenttype.DocumentTypeRepository
@@ -48,6 +52,8 @@ lateinit var secureAreaRepository: SecureAreaRepository
 
 lateinit var documentTypeRepository: DocumentTypeRepository
 lateinit var documentStore: DocumentStore
+
+private val documents = mutableStateListOf<Document>()
 
 private fun showToast(message: String) {
     println("vishnu: $message")
@@ -129,6 +135,33 @@ fun App() {
                     coroutineScope.launch {
                         try {
 
+                            for (documentId in documentStore.listDocuments()) {
+                                try {
+                                    documentStore.lookupDocument(documentId).let { document ->
+                                        if (document != null && !documents.contains(document))
+                                            documents.add(document)
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    showToast("Failed to fetch credential infos for $documentId")
+                                }
+                            }
+
+                            showToast("Documents fetched successfully")
+
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            showToast("Initialize DocumentStore failed")
+                        }
+                    }
+                }) {
+                    Text("Fetch mDocs from DocumentStore")
+                }
+
+                Button(onClick = {
+                    coroutineScope.launch {
+                        try {
+
                             val document = documentStore.createDocument(
                                 displayName = "Erika's Driving License",
                                 typeDisplayName = "Utopia Driving License",
@@ -177,6 +210,7 @@ fun App() {
                                     validUntil = validUntil,
                                 )
 
+                            documents.add(document)
                             showToast("mDoc created successfully")
 
                         } catch (e: Exception) {
@@ -186,6 +220,39 @@ fun App() {
                     }
                 }) {
                     Text("Create mDoc")
+                }
+
+                LazyColumn {
+                    items(documents.toList()) { documentInfo ->
+                        Column(
+                            modifier = Modifier.fillMaxWidth().padding(10.dp),
+                        ) {
+                            Text(
+                                text = "Document: ${documentInfo.metadata.displayName}",
+                                style = MaterialTheme.typography.headlineSmall
+                            )
+                            Text(
+                                text = "Type: ${documentInfo.metadata.typeDisplayName}",
+                                style = MaterialTheme.typography.bodyLarge
+                            )
+
+                            Button(onClick = {
+                                coroutineScope.launch {
+                                    try {
+                                        documentStore.deleteDocument(documentInfo.identifier)
+                                        documents.remove(documentInfo)
+                                        showToast("Document deleted successfully")
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                        showToast("Delete Document failed")
+                                    }
+                                }
+                            }) {
+                                Text("Delete Document")
+                            }
+                        }
+
+                    }
                 }
             }
         }
