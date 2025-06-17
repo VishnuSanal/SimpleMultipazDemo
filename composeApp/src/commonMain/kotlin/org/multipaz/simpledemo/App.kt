@@ -1,11 +1,15 @@
 package org.multipaz.simpledemo
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarDuration
@@ -24,9 +28,13 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
+import kotlinx.io.bytestring.ByteString
 import kotlinx.io.bytestring.encodeToByteString
+import org.jetbrains.compose.resources.getDrawableResourceBytes
+import org.jetbrains.compose.resources.getSystemResourceEnvironment
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.multipaz.asn1.ASN1Integer
+import org.multipaz.compose.decodeImage
 import org.multipaz.compose.prompt.PromptDialogs
 import org.multipaz.crypto.Algorithm
 import org.multipaz.crypto.Crypto
@@ -44,6 +52,8 @@ import org.multipaz.securearea.CreateKeySettings
 import org.multipaz.securearea.SecureArea
 import org.multipaz.securearea.SecureAreaRepository
 import org.multipaz.storage.Storage
+import simplemultipazdemo.composeapp.generated.resources.Res
+import simplemultipazdemo.composeapp.generated.resources.driving_license_card_art
 import kotlin.time.Duration.Companion.days
 
 private lateinit var snackbarHostState: SnackbarHostState
@@ -169,6 +179,14 @@ fun App(promptModel: PromptModel) {
                             val document = documentStore.createDocument(
                                 displayName = "Erika's Driving License",
                                 typeDisplayName = "Utopia Driving License",
+                                cardArt = ByteString(
+                                    getDrawableResourceBytes(
+                                        getSystemResourceEnvironment(),
+                                        Res.drawable.driving_license_card_art,
+                                    )
+                                ),
+//                                issuerLogo = null,
+//                                other = null
                             )
 
                             val now = Clock.System.now()
@@ -226,38 +244,91 @@ fun App(promptModel: PromptModel) {
                     Text("Create mDoc")
                 }
 
-                LazyColumn {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
                     items(documents.toList()) { documentInfo ->
-                        Column(
-                            modifier = Modifier.fillMaxWidth().padding(10.dp),
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp, horizontal = 16.dp),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
                         ) {
-                            Text(
-                                text = "Document: ${documentInfo.metadata.displayName}",
-                                style = MaterialTheme.typography.headlineSmall
-                            )
-                            Text(
-                                text = "Type: ${documentInfo.metadata.typeDisplayName}",
-                                style = MaterialTheme.typography.bodyLarge
-                            )
 
-                            Button(onClick = {
-                                coroutineScope.launch {
-                                    try {
-                                        documentStore.deleteDocument(documentInfo.identifier)
-                                        documents.remove(documentInfo)
-                                        showToast("Document deleted successfully")
-                                    } catch (e: Exception) {
-                                        e.printStackTrace()
-                                        showToast("Delete Document failed")
+                            documentInfo.metadata.cardArt?.let {
+                                Image(
+                                    modifier = Modifier
+                                        .fillMaxWidth(0.9f)
+                                        .padding(16.dp),
+                                    bitmap = decodeImage(it.toByteArray()),
+                                    contentDescription = "Document Card Art"
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+
+                                Column(
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Text(
+                                        text = "Document: ${documentInfo.metadata.displayName}",
+                                        style = MaterialTheme.typography.headlineSmall
+                                    )
+                                    Text(
+                                        text = "Type: ${documentInfo.metadata.typeDisplayName}",
+                                        style = MaterialTheme.typography.bodyLarge,
+                                        modifier = Modifier.padding(top = 4.dp)
+                                    )
+                                }
+
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Button(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                try {
+                                                    showToast("WIP!")
+                                                } catch (e: Exception) {
+                                                    e.printStackTrace()
+                                                    showToast("QR Display failed")
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.padding(start = 16.dp)
+                                    ) {
+                                        Text("Show QR Code")
+                                    }
+
+                                    Button(
+                                        onClick = {
+                                            coroutineScope.launch {
+                                                try {
+                                                    documentStore.deleteDocument(documentInfo.identifier)
+                                                    documents.remove(documentInfo)
+                                                    showToast("Document deleted successfully")
+                                                } catch (e: Exception) {
+                                                    e.printStackTrace()
+                                                    showToast("Delete Document failed")
+                                                }
+                                            }
+                                        },
+                                        modifier = Modifier.padding(start = 16.dp)
+                                    ) {
+                                        Text("Delete")
                                     }
                                 }
-                            }) {
-                                Text("Delete Document")
                             }
                         }
-
                     }
                 }
+
             }
         }
     }
