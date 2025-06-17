@@ -16,6 +16,7 @@ kotlin = "2.1.21"
 
 multipaz = "0.92.0-pre.13.1f028934"
 
+androidx-fragment = "1.8.6"
 
 [libraries]
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test", version.ref = "kotlin" }
@@ -34,6 +35,8 @@ multipaz = { group = "org.multipaz", name = "multipaz", version.ref = "multipaz"
 multipaz-models = { group = "org.multipaz", name = "multipaz-models", version.ref = "multipaz" }
 multipaz-compose = { group = "org.multipaz", name = "multipaz-compose", version.ref = "multipaz" }
 multipaz-doctypes = { group = "org.multipaz", name = "multipaz-doctypes", version.ref = "multipaz" }
+
+androidx-fragment = { group = "androidx.fragment", name = "fragment", version.ref = "androidx-fragment" }
 
 [plugins]
 androidApplication = { id = "com.android.application", version.ref = "agp" }
