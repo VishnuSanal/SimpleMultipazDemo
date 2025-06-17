@@ -27,6 +27,7 @@ import kotlinx.datetime.Clock
 import kotlinx.io.bytestring.encodeToByteString
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.multipaz.asn1.ASN1Integer
+import org.multipaz.compose.prompt.PromptDialogs
 import org.multipaz.crypto.Algorithm
 import org.multipaz.crypto.Crypto
 import org.multipaz.crypto.EcCurve
@@ -38,6 +39,7 @@ import org.multipaz.document.buildDocumentStore
 import org.multipaz.documenttype.DocumentTypeRepository
 import org.multipaz.documenttype.knowntypes.DrivingLicense
 import org.multipaz.mdoc.util.MdocUtil
+import org.multipaz.prompt.PromptModel
 import org.multipaz.securearea.CreateKeySettings
 import org.multipaz.securearea.SecureArea
 import org.multipaz.securearea.SecureAreaRepository
@@ -74,15 +76,17 @@ private fun showToast(message: String) {
 
 @Composable
 @Preview
-fun App() {
+fun App(promptModel: PromptModel) {
     MaterialTheme {
         snackbarHostState = remember { SnackbarHostState() }
+
+        PromptDialogs(promptModel)
 
         Scaffold(
             snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         ) { innerPadding ->
 
-            val coroutineScope = rememberCoroutineScope()
+            val coroutineScope = rememberCoroutineScope { promptModel }
 
             Column(
                 modifier = Modifier.fillMaxWidth().padding(50.dp),
