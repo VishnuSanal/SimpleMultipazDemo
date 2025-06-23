@@ -1,7 +1,6 @@
 package org.multipaz.simpledemo.ui
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -11,11 +10,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.launch
 import org.multipaz.compose.decodeImage
 import org.multipaz.document.Document
 
@@ -71,39 +67,15 @@ fun DocumentCard(
 }
 
 @Composable
-fun ActionButtons(
-    coroutineScope: CoroutineScope,
-    onCreateSecureArea: suspend () -> Unit,
-    onInitializeDocumentStore: suspend () -> Unit,
-    onFetchDocuments: suspend () -> Unit,
-    onCreateMdoc: suspend () -> Unit
+fun ActionButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
+    Button(
+        onClick = onClick,
+        modifier = modifier.padding(vertical = 4.dp)
     ) {
-        Button(onClick = {
-            coroutineScope.launch { onCreateSecureArea() }
-        }) {
-            Text("Create SecureArea")
-        }
-
-        Button(onClick = {
-            coroutineScope.launch { onInitializeDocumentStore() }
-        }) {
-            Text("Initialize DocumentStore")
-        }
-
-        Button(onClick = {
-            coroutineScope.launch { onFetchDocuments() }
-        }) {
-            Text("Fetch mDocs from DocumentStore")
-        }
-
-        Button(onClick = {
-            coroutineScope.launch { onCreateMdoc() }
-        }) {
-            Text("Create mDoc")
-        }
+        Text(text)
     }
 }

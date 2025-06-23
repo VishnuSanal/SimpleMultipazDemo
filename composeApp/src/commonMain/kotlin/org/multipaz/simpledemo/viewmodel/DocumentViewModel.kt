@@ -3,9 +3,6 @@ package org.multipaz.simpledemo.viewmodel
 import androidx.compose.runtime.mutableStateListOf
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.datetime.Clock
 import kotlinx.io.bytestring.ByteString
@@ -30,9 +27,6 @@ import kotlin.time.Duration.Companion.days
 class DocumentViewModel {
     private val _documents = mutableStateListOf<Document>()
     val documents: List<Document> get() = _documents.toList()
-
-    private val _uiState = MutableStateFlow<UiState>(UiState.Initial)
-    val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     lateinit var storage: Storage
     lateinit var secureArea: SecureArea
@@ -166,12 +160,5 @@ class DocumentViewModel {
                 onError(e)
             }
         }
-    }
-
-    sealed class UiState {
-        object Initial : UiState()
-        object Loading : UiState()
-        data class Error(val message: String) : UiState()
-        object Success : UiState()
     }
 }
