@@ -12,6 +12,7 @@ import androidx.compose.material3.SnackbarDuration
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.collectAsState
@@ -33,13 +34,10 @@ import org.jetbrains.compose.resources.getSystemResourceEnvironment
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
 import org.multipaz.cbor.Simple
-import org.multipaz.compose.camera.CameraCaptureResolution
-import org.multipaz.compose.camera.CameraSelection
 import org.multipaz.compose.permissions.rememberBluetoothPermissionState
 import org.multipaz.compose.permissions.rememberCameraPermissionState
 import org.multipaz.compose.presentment.Presentment
 import org.multipaz.compose.prompt.PromptDialogs
-import org.multipaz.compose.qrcode.QrCodeScanner
 import org.multipaz.compose.qrcode.generateQrCode
 import org.multipaz.crypto.Crypto
 import org.multipaz.crypto.EcCurve
@@ -56,6 +54,7 @@ import org.multipaz.models.presentment.SimplePresentmentSource
 import org.multipaz.prompt.PromptModel
 import org.multipaz.simpledemo.ui.ActionButton
 import org.multipaz.simpledemo.ui.DocumentCard
+import org.multipaz.simpledemo.ui.ScanQrCodeDialog
 import org.multipaz.simpledemo.viewmodel.DocumentViewModel
 import org.multipaz.trustmanagement.TrustManager
 import org.multipaz.util.UUID
@@ -180,21 +179,28 @@ fun App(promptModel: PromptModel) {
                     })
 
                 if (showQrScanner) {
-                    QrCodeScanner(
-                        modifier = Modifier.padding(16.dp),
-                        cameraSelection = CameraSelection.DEFAULT_BACK_CAMERA,
-                        captureResolution = CameraCaptureResolution.HIGH,
-                        showCameraPreview = true,
-                        onCodeScanned = { qrCode ->
-                            println("vishnu: QR Code scanned: $qrCode")
-                            if (qrCode != null) {
-                                showToast("QR Code scanned: $qrCode")
-
-                                showQrScanner = false
+                    val qrCode = remember { mutableStateOf<String?>(null) }
+                    ScanQrCodeDialog(
+                        title = { Text("Scan code") },
+                        text = { Text("If a QR code is detected, it is printed out at the bottom of the dialog") },
+                        dismissButton = "Close",
+                        onCodeScanned = { data ->
+                            qrCode.value = data
+                            false
+                        },
+                        onNoCodeDetected = {
+                            qrCode.value = null
+                        },
+                        additionalContent = {
+                            if (qrCode.value == null) {
+                                Text("No QR Code detected")
                             } else {
-                                showToast("No QR code detected")
+                                Text("QR: ${qrCode.value}")
                             }
-                        })
+
+                        },
+                        onDismiss = { showQrScanner = false }
+                    )
                 }
 
                 val state = presentmentModel.state.collectAsState()
@@ -225,7 +231,7 @@ fun App(promptModel: PromptModel) {
                             source = SimplePresentmentSource(
                                 documentStore = viewModel.documentStore,
                                 documentTypeRepository = viewModel.documentTypeRepository,
-                                readerTrustManager = TrustManager(),
+                                readerTrustManager = TrustManager(), // fixme
                                 preferSignatureToKeyAgreement = true,
                                 domainMdocSignature = "mdoc",
                             ),
