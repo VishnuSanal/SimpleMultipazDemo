@@ -1,7 +1,6 @@
 package org.multipaz.simpledemo.ui
 
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -18,7 +17,6 @@ import org.multipaz.document.Document
 @Composable
 fun DocumentCard(
     document: Document,
-    onShowQrCode: () -> Unit,
     onDelete: () -> Unit
 ) {
     Card(
@@ -48,20 +46,11 @@ fun DocumentCard(
             modifier = Modifier.padding(8.dp),
         )
 
-        Row {
-            Button(
-                onClick = { onShowQrCode() },
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text("Show QR Code")
-            }
-
-            Button(
-                onClick = { onDelete() },
-                modifier = Modifier.padding(16.dp)
-            ) {
-                Text("Delete")
-            }
+        Button(
+            onClick = { onDelete() },
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text("Delete")
         }
     }
 }

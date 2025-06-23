@@ -93,7 +93,9 @@ class DocumentViewModel {
             try {
                 val document = documentStore.createDocument(
                     displayName = "Erika's Driving License",
-                    typeDisplayName = "Utopia Driving License",
+                    typeDisplayName = "Utopia Driving License - ${
+                        Clock.System.now().toEpochMilliseconds()
+                    }",
                     cardArt = cardArt
                 )
 
