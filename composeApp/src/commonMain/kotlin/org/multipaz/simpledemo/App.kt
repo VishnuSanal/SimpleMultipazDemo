@@ -223,12 +223,15 @@ fun App(promptModel: PromptModel) {
                         }
                     }
 
-                    PresentmentModel.State.WAITING_FOR_SOURCE, PresentmentModel.State.PROCESSING, PresentmentModel.State.WAITING_FOR_DOCUMENT_SELECTION, PresentmentModel.State.WAITING_FOR_CONSENT, PresentmentModel.State.COMPLETED -> {
+                    PresentmentModel.State.WAITING_FOR_SOURCE,
+                    PresentmentModel.State.PROCESSING,
+                    PresentmentModel.State.WAITING_FOR_DOCUMENT_SELECTION,
+                    PresentmentModel.State.WAITING_FOR_CONSENT,
+                    PresentmentModel.State.COMPLETED -> {
                         Presentment(
                             presentmentModel = presentmentModel,
-                            promptModel = promptModel,
                             documentTypeRepository = viewModel.documentTypeRepository,
-                            source = SimplePresentmentSource(
+                            presentmentSource = SimplePresentmentSource(
                                 documentStore = viewModel.documentStore,
                                 documentTypeRepository = viewModel.documentTypeRepository,
                                 readerTrustManager = TrustManager(), // fixme
