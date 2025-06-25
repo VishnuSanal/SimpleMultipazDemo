@@ -306,7 +306,7 @@ fun App(promptModel: PromptModel) {
                     })
 
                 ActionButton(
-                    text = "Toggle QR Scanner", onClick = {
+                    text = "Show QR Scanner", onClick = {
                         if (!cameraPermissionState.isGranted) {
                             showToast("Camera permission is required to scan QR codes")
                         } else {
@@ -318,8 +318,10 @@ fun App(promptModel: PromptModel) {
                     text = "Toggle QR Code", onClick = {
                         if (!bluetoothPermissionState.isGranted) {
                             showToast("Bluetooth permission is required to start engagement")
-                        } else {
+                        } else if (deviceEngagement.value == null) {
                             startEngagement(presentmentModel, deviceEngagement)
+                        } else {
+                            deviceEngagement.value = null
                         }
                     })
 
@@ -489,7 +491,6 @@ private data class RequestPickerEntry(
     val sampleRequest: DocumentCannedRequest
 )
 
-// --- Retrofit doReaderFlow to update new states ---
 private suspend fun doReaderFlow(
     encodedDeviceEngagement: ByteString,
     showToast: (String) -> Unit,
