@@ -1,4 +1,4 @@
-package org.multipaz.simpledemo
+package org.multipaz.simpledemo.utils
 
 import org.multipaz.cbor.Bstr
 import org.multipaz.cbor.Cbor
@@ -16,8 +16,8 @@ import org.multipaz.documenttype.knowntypes.PhotoID
 import org.multipaz.documenttype.knowntypes.UtopiaMovieTicket
 import org.multipaz.mdoc.request.DeviceRequestGenerator
 
-object TestAppUtils {
-    private const val TAG = "TestAppUtils"
+object EncodingUtils {
+    private const val TAG = "EncodingUtils"
 
     val provisionedDocumentTypes = listOf(
         DrivingLicense.getDocumentType(),
