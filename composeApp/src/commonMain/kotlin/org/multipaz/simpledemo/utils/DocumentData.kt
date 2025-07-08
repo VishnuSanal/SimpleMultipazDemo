@@ -15,6 +15,7 @@ import org.multipaz.documenttype.DocumentAttributeType
 import org.multipaz.documenttype.DocumentTypeRepository
 import org.multipaz.mdoc.response.DeviceResponseParser
 import org.multipaz.trustmanagement.TrustManager
+import org.multipaz.trustmanagement.X509CertTrustPoint
 import org.multipaz.util.Logger
 
 data class DocumentData(
@@ -32,8 +33,16 @@ data class DocumentData(
             val warnings = mutableListOf<String>()
             val kvPairs = mutableListOf<DocumentKeyValuePair>()
             if (document.issuerSignedAuthenticated) {
+                Logger.e("vishnu", issuerTrustManager.getTrustPoints().size.toString())
+                issuerTrustManager.getTrustPoints().forEach {
+                    Logger.e("vishnu", it.toString())
+                    Logger.e("vishnu", it.identifier)
+                    Logger.e("vishnu", (it as X509CertTrustPoint).certificate.toPem())
+                }
+
                 val trustResult =
                     issuerTrustManager.verify(document.issuerCertificateChain.certificates)
+                Logger.e("vishnu", trustResult.toString());
                 if (trustResult.isTrusted) {
                     if (trustResult.trustPoints[0].metadata.displayName != null) {
                         infos.add("Issuer '${trustResult.trustPoints[0].metadata.displayName}' is in a trust list")

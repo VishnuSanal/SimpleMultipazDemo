@@ -28,26 +28,17 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
-import kotlinx.datetime.Clock
 import kotlinx.io.bytestring.ByteString
 import org.jetbrains.compose.resources.getDrawableResourceBytes
 import org.jetbrains.compose.resources.getSystemResourceEnvironment
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.ui.tooling.preview.Preview
-import org.multipaz.asn1.ASN1Integer
-import org.multipaz.cbor.Cbor
 import org.multipaz.compose.permissions.rememberBluetoothPermissionState
 import org.multipaz.compose.permissions.rememberCameraPermissionState
 import org.multipaz.compose.presentment.Presentment
 import org.multipaz.compose.prompt.PromptDialogs
 import org.multipaz.compose.qrcode.generateQrCode
-import org.multipaz.crypto.Crypto
-import org.multipaz.crypto.EcCurve
 import org.multipaz.crypto.EcPrivateKey
-import org.multipaz.crypto.EcPublicKey
-import org.multipaz.crypto.X500Name
-import org.multipaz.crypto.X509Cert
-import org.multipaz.mdoc.util.MdocUtil
 import org.multipaz.models.presentment.PresentmentModel
 import org.multipaz.models.presentment.SimplePresentmentSource
 import org.multipaz.prompt.PromptModel
@@ -58,107 +49,11 @@ import org.multipaz.simpledemo.ui.ShowReaderResult
 import org.multipaz.simpledemo.utils.PrsentmentUtils
 import org.multipaz.simpledemo.utils.PrsentmentUtils.startEngagement
 import org.multipaz.simpledemo.viewmodel.DocumentViewModel
-import org.multipaz.storage.StorageTable
-import org.multipaz.storage.StorageTableSpec
-import org.multipaz.trustmanagement.TrustManager
 import org.multipaz.util.fromBase64Url
 import org.multipaz.util.toBase64Url
 import simplemultipazdemo.composeapp.generated.resources.Res
 import simplemultipazdemo.composeapp.generated.resources.compose_multiplatform
 import simplemultipazdemo.composeapp.generated.resources.driving_license_card_art
-import kotlin.time.Duration.Companion.days
-
-suspend fun initReaderCredentials(
-    keyStorage: StorageTable,
-    certsValidFrom: kotlinx.datetime.Instant,
-    certsValidUntil: kotlinx.datetime.Instant
-): Triple<EcPrivateKey, X509Cert, X509Cert> {
-    // Bundled root key and cert (replace PEMs with your actual values)
-    val bundledReaderRootKey: EcPrivateKey by lazy {
-        val readerRootKeyPub = EcPublicKey.fromPem(
-            """
-                -----BEGIN PUBLIC KEY-----
-                MHYwEAYHKoZIzj0CAQYFK4EEACIDYgAE+QDye70m2O0llPXMjVjxVZz3m5k6agT+
-                wih+L79b7jyqUl99sbeUnpxaLD+cmB3HK3twkA7fmVJSobBc+9CDhkh3mx6n+YoH
-                5RulaSWThWBfMyRjsfVODkosHLCDnbPV
-                -----END PUBLIC KEY-----
-            """.trimIndent().trim(),
-            EcCurve.P384
-        )
-        EcPrivateKey.fromPem(
-            """
-                -----BEGIN PRIVATE KEY-----
-                MIG2AgEAMBAGByqGSM49AgEGBSuBBAAiBIGeMIGbAgEBBDCcRuzXW3pW2h9W8pu5
-                /CSR6JSnfnZVATq+408WPoNC3LzXqJEQSMzPsI9U1q+wZ2yhZANiAAT5APJ7vSbY
-                7SWU9cyNWPFVnPebmTpqBP7CKH4vv1vuPKpSX32xt5SenFosP5yYHccre3CQDt+Z
-                UlKhsFz70IOGSHebHqf5igflG6VpJZOFYF8zJGOx9U4OSiwcsIOds9U=
-                -----END PRIVATE KEY-----
-            """.trimIndent().trim(),
-            readerRootKeyPub
-        )
-    }
-    val bundledReaderRootCert: X509Cert by lazy {
-        MdocUtil.generateReaderRootCertificate(
-            readerRootKey = bundledReaderRootKey,
-            subject = X500Name.fromName("CN=OWF Multipaz TestApp Reader Root"),
-            serial = ASN1Integer.fromRandom(numBits = 128),
-            validFrom = certsValidFrom,
-            validUntil = certsValidUntil,
-            crlUrl = "https://github.com/openwallet-foundation-labs/identity-credential/crl"
-        )
-    }
-
-    val readerRootKey = keyStorage.get("readerRootKey")
-        ?.let { EcPrivateKey.fromDataItem(Cbor.decode(it.toByteArray())) }
-        ?: run {
-            keyStorage.insert(
-                "readerRootKey",
-                ByteString(Cbor.encode(bundledReaderRootKey.toDataItem()))
-            )
-            bundledReaderRootKey
-        }
-
-
-    readerRootCert = keyStorage.get("readerRootCert")
-        ?.let { X509Cert.fromDataItem(Cbor.decode(it.toByteArray())) }
-        ?: run {
-            keyStorage.insert(
-                "readerRootCert",
-                ByteString(Cbor.encode(bundledReaderRootCert.toDataItem()))
-            )
-            bundledReaderRootCert
-        }
-
-    // Reader key and cert
-    readerKey = keyStorage.get("readerKey")?.let {
-        EcPrivateKey.fromDataItem(Cbor.decode(it.toByteArray()))
-    } ?: run {
-        val key = Crypto.createEcPrivateKey(EcCurve.P256)
-        keyStorage.insert("readerKey", ByteString(Cbor.encode(key.toDataItem())))
-        key
-    }
-    readerCert = keyStorage.get("readerCert")?.let {
-        X509Cert.fromDataItem(Cbor.decode(it.toByteArray()))
-    } ?: run {
-        val cert = MdocUtil.generateReaderCertificate(
-            readerRootCert = readerRootCert,
-            readerRootKey = readerRootKey,
-            readerKey = readerKey.publicKey,
-            subject = X500Name.fromName("CN=OWF IC TestApp Reader Cert"),
-            serial = ASN1Integer.fromRandom(numBits = 128),
-            validFrom = certsValidFrom,
-            validUntil = certsValidUntil,
-        )
-        keyStorage.insert("readerCert", ByteString(Cbor.encode(cert.toDataItem())))
-        cert
-    }
-
-    return Triple(readerKey, readerCert, readerRootCert)
-}
-
-lateinit var readerKey: EcPrivateKey
-lateinit var readerCert: X509Cert
-lateinit var readerRootCert: X509Cert
 
 @Composable
 @Preview
@@ -238,16 +133,9 @@ fun App(promptModel: PromptModel) {
                 ActionButton(
                     text = "Initialize Keys", onClick = {
                         coroutineScope.launch {
-                            initReaderCredentials(
-                                viewModel.storage.getTable(
-                                    StorageTableSpec(
-                                        name = "TestAppKeys",
-                                        supportPartitions = false,
-                                        supportExpiration = false
-                                    )
-                                ),
-                                Clock.System.now(),
-                                Clock.System.now().plus(365.days)
+                            viewModel.initReaderCredentials(
+                                onSuccess = { showToast("Initialized keys successfully") },
+                                onError = { showToast("Initialize keys failed") }
                             )
                         }
                     })
@@ -317,9 +205,9 @@ fun App(promptModel: PromptModel) {
                                             ),
                                             showToast = { showToast(it) },
                                             viewModel = viewModel,
-                                            readerKey = readerKey,
-                                            readerCert = readerCert,
-                                            readerRootCert = readerRootCert,
+                                            readerKey = viewModel.readerKey,
+                                            readerCert = viewModel.readerCert,
+                                            readerRootCert = viewModel.readerRootCert,
                                             readerMostRecentDeviceResponse = readerMostRecentDeviceResponse,
                                             readerSessionTranscript = readerSessionTranscript,
                                             eReaderKeyState = eReaderKeyState
@@ -381,7 +269,7 @@ fun App(promptModel: PromptModel) {
                             presentmentSource = SimplePresentmentSource(
                                 documentStore = viewModel.documentStore,
                                 documentTypeRepository = viewModel.documentTypeRepository,
-                                readerTrustManager = TrustManager(), // fixme
+                                readerTrustManager = viewModel.readerTrustManager,
                                 preferSignatureToKeyAgreement = true,
                                 domainMdocSignature = "mdoc",
                             ),
