@@ -23,7 +23,7 @@ data class DocumentData(
     val kvPairs: List<DocumentKeyValuePair>
 ) {
     companion object {
-        fun fromMdocDeviceResponseDocument(
+        suspend fun fromMdocDeviceResponseDocument(
             document: DeviceResponseParser.Document,
             documentTypeRepository: DocumentTypeRepository,
             issuerTrustManager: TrustManager
@@ -31,16 +31,15 @@ data class DocumentData(
             val infos = mutableListOf<String>()
             val warnings = mutableListOf<String>()
             val kvPairs = mutableListOf<DocumentKeyValuePair>()
-
             if (document.issuerSignedAuthenticated) {
                 val trustResult =
                     issuerTrustManager.verify(document.issuerCertificateChain.certificates)
                 if (trustResult.isTrusted) {
-                    if (trustResult.trustPoints[0].displayName != null) {
-                        infos.add("Issuer '${trustResult.trustPoints[0].displayName}' is in a trust list")
+                    if (trustResult.trustPoints[0].metadata.displayName != null) {
+                        infos.add("Issuer '${trustResult.trustPoints[0].metadata.displayName}' is in a trust list")
                     } else {
                         infos.add(
-                            "Issuer with name '${trustResult.trustPoints[0].certificate.subject.name}' " +
+                            "Issuer with name '${trustResult.trustPoints[0].identifier}' " +
                                     "is in a trust list"
                         )
                     }
@@ -91,6 +90,9 @@ data class DocumentData(
                 val mdocNamespace = if (mdocType != null) {
                     mdocType.namespaces.get(namespaceName)
                 } else {
+                    // Some DocTypes not known by [documentTypeRepository] - could be they are
+                    // private or was just never added - may use namespaces from existing
+                    // DocTypes... support that as well.
                     documentTypeRepository.getDocumentTypeForMdocNamespace(namespaceName)
                         ?.mdocDocumentType?.namespaces?.get(namespaceName)
                 }

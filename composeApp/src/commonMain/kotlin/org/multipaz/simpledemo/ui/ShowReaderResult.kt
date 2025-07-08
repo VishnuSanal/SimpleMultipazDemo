@@ -14,6 +14,7 @@ import androidx.compose.runtime.MutableState
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import kotlinx.coroutines.runBlocking
 import org.multipaz.compose.cards.InfoCard
 import org.multipaz.compose.cards.WarningCard
 import org.multipaz.crypto.EcPrivateKey
@@ -21,7 +22,6 @@ import org.multipaz.mdoc.response.DeviceResponseParser
 import org.multipaz.simpledemo.utils.DocumentData
 import org.multipaz.simpledemo.utils.DocumentKeyValuePair
 import org.multipaz.simpledemo.viewmodel.DocumentViewModel
-import org.multipaz.trustmanagement.TrustManager
 
 @Composable
 fun ShowReaderResult(
@@ -51,11 +51,13 @@ fun ShowReaderResult(
                 fontWeight = FontWeight.Bold,
             )
         } else {
-            val documentData = DocumentData.fromMdocDeviceResponseDocument(
-                deviceResponse2.documents[0],
-                viewModel.documentTypeRepository,
-                TrustManager()
-            )
+            val documentData = runBlocking {
+                DocumentData.fromMdocDeviceResponseDocument(
+                    deviceResponse2.documents[0],
+                    viewModel.documentTypeRepository,
+                    viewModel.issuerTrustManager
+                )
+            }
             ShowDocumentData(documentData, 0, deviceResponse2.documents.size)
         }
     }
