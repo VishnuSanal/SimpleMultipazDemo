@@ -49,6 +49,10 @@ kotlin {
             implementation(libs.multipaz.models)
             implementation(libs.multipaz.compose)
             implementation(libs.multipaz.doctypes)
+
+            implementation(libs.filekit.core)
+            implementation(libs.filekit.dialogs)
+            implementation(libs.filekit.dialogs.compose)
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

@@ -28,7 +28,6 @@ import org.multipaz.securearea.SecureAreaRepository
 import org.multipaz.storage.Storage
 import org.multipaz.storage.StorageTableSpec
 import org.multipaz.trustmanagement.LocalTrustManager
-import org.multipaz.trustmanagement.TrustManager
 import org.multipaz.trustmanagement.TrustPointAlreadyExistsException
 import org.multipaz.trustmanagement.TrustPointMetadata
 import org.multipaz.util.Platform
@@ -53,7 +52,7 @@ class DocumentViewModel {
     lateinit var readerRootCert: X509Cert
 
     lateinit var readerTrustManager: LocalTrustManager
-    lateinit var issuerTrustManager: TrustManager
+    lateinit var issuerTrustManager: LocalTrustManager
 
     lateinit var dsKey: EcPrivateKey
     lateinit var dsCert: X509Cert
@@ -119,17 +118,6 @@ class DocumentViewModel {
                 val signedAt = now
                 val validFrom = now
                 val validUntil = now + 365.days
-
-                dsKey = Crypto.createEcPrivateKey(EcCurve.P256)
-                dsCert = MdocUtil.generateDsCertificate(
-                    iacaCert = iacaCert,
-                    iacaKey = iacaKey,
-                    dsKey = dsKey.publicKey,
-                    subject = X500Name.fromName(name = "CN=Test DS Key"),
-                    serial = ASN1Integer.fromRandom(numBits = 128),
-                    validFrom = validFrom,
-                    validUntil = validUntil
-                )
 
                 val document = documentStore.createDocument(
                     displayName = "Erika's Driving License",
@@ -269,6 +257,17 @@ class DocumentViewModel {
                     crlUrl = "https://vishnusanal.github.io/multipaz/iaca/crl"
                 )
 
+                dsKey = Crypto.createEcPrivateKey(EcCurve.P256)
+                dsCert = MdocUtil.generateDsCertificate(
+                    iacaCert = iacaCert,
+                    iacaKey = iacaKey,
+                    dsKey = dsKey.publicKey,
+                    subject = X500Name.fromName(name = "CN=Vishnu's Issuer Document Signing Key"),
+                    serial = ASN1Integer.fromRandom(numBits = 128),
+                    validFrom = validFrom,
+                    validUntil = validUntil
+                ) // todo check here -- maybe diff for each device
+
                 onSuccess()
             } catch (e: Exception) {
                 e.printStackTrace()
@@ -301,6 +300,28 @@ class DocumentViewModel {
                     } catch (e: TrustPointAlreadyExistsException) {
                         // Do nothing, it's possible our certificate is in the list above.
                     }
+//                    try {
+//                        readerTrustManager.addTrustPoint(
+//                            certificate = iacaCert,
+//                            metadata = TrustPointMetadata(
+//                                displayName = "Vishnu's Simple Multipaz Demo Issuer",
+//                                privacyPolicyUrl = "https://vishnusanal.github.io"
+//                            )
+//                        )
+//                    } catch (e: TrustPointAlreadyExistsException) {
+//                        // Do nothing, it's possible our certificate is in the list above.
+//                    }
+//                    try {
+//                        readerTrustManager.addTrustPoint(
+//                            certificate = dsCert,
+//                            metadata = TrustPointMetadata(
+//                                displayName = "Vishnu's Simple Multipaz Demo Issuer",
+//                                privacyPolicyUrl = "https://vishnusanal.github.io"
+//                            )
+//                        )
+//                    } catch (e: TrustPointAlreadyExistsException) {
+//                        // Do nothing, it's possible our certificate is in the list above.
+//                    }
                     try {
                         readerTrustManager.addTrustPoint(
                             certificate = X509Cert(
@@ -326,6 +347,10 @@ class DocumentViewModel {
                         certificate = iacaCert,
                         metadata = TrustPointMetadata(displayName = "Vishnu's Simple Multipaz Demo Issuer"),
                     )
+//                    builtInIssuerTrustManager.addTrustPoint(
+//                        certificate = dsCert,
+//                        metadata = TrustPointMetadata(displayName = "Vishnu's Simple Multipaz Demo Issuer DS Cert"),
+//                    )
                 }
                 issuerTrustManager = builtInIssuerTrustManager
 
@@ -348,6 +373,33 @@ class DocumentViewModel {
                 e.printStackTrace()
                 onError(e)
             }
+        }
+    }
+
+    suspend fun importIacaCertificate(
+        onSuccess: () -> Unit,
+        onError: (Exception) -> Unit,
+        pemString: String
+    ) {
+        try {
+            if (pemString.isEmpty()) {
+                onError(Exception("No PEM files selected"))
+                return
+            }
+            try {
+                val cert = X509Cert.fromPem(pemString)
+                issuerTrustManager.addTrustPoint(
+                    certificate = cert,
+                    metadata = TrustPointMetadata(displayName = "Imported IACA Certificate")
+                )
+            } catch (e: Exception) {
+                onError(Exception("Invalid PEM format: ${e.message}"))
+                e.printStackTrace()
+                return
+            }
+            onSuccess()
+        } catch (e: Exception) {
+            onError(e)
         }
     }
 }

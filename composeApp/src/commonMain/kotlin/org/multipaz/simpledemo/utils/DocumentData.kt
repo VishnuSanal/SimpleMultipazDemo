@@ -36,6 +36,36 @@ data class DocumentData(
             val infos = mutableListOf<String>()
             val warnings = mutableListOf<String>()
             val kvPairs = mutableListOf<DocumentKeyValuePair>()
+            Logger.e(
+                "vishnu",
+                "fromMdocDeviceResponseDocument() called with: document = $document, " +
+                        "issuerTrustManager = $issuerTrustManager"
+            )
+            Logger.e(
+                "vishnu",
+                "fromMdocDeviceResponseDocument: ${issuerTrustManager.getTrustPoints().size}"
+            )
+            issuerTrustManager.getTrustPoints().forEach {
+                Logger.e("vishnu", "fromMdocDeviceResponseDocument() called ${it}")
+                Logger.e(
+                    "vishnu",
+                    "fromMdocDeviceResponseDocument() called ${(it as X509CertTrustPoint).certificate}"
+                )
+                Logger.e(
+                    "vishnu",
+                    "fromMdocDeviceResponseDocument() called ${(it as X509CertTrustPoint).certificate.encodedCertificate}"
+                )
+                Logger.e(
+                    "vishnu",
+                    "fromMdocDeviceResponseDocument() called ${(it as X509CertTrustPoint).certificate.subject}"
+                )
+                Logger.e(
+                    "vishnu",
+                    "fromMdocDeviceResponseDocument() called ${(it as X509CertTrustPoint).certificate.toPem()}"
+                )
+                Logger.e("vishnu", "fromMdocDeviceResponseDocument() called ${it.metadata}")
+                Logger.e("vishnu", "fromMdocDeviceResponseDocument() called ${it.identifier}")
+            }
             if (document.issuerSignedAuthenticated) {
                 val trustResult =
                     issuerTrustManager.verify(document.issuerCertificateChain.certificates)

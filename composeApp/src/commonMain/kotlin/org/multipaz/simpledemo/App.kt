@@ -24,6 +24,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
+import io.github.vinceglb.filekit.dialogs.FileKitMode
+import io.github.vinceglb.filekit.dialogs.FileKitType
+import io.github.vinceglb.filekit.dialogs.compose.rememberFilePickerLauncher
+import io.github.vinceglb.filekit.readString
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -148,6 +152,31 @@ fun App(promptModel: PromptModel) {
                                 onError = { showToast("Initialize TrustManager failed") }
                             )
                         }
+                    })
+
+                val pemFilePicker = rememberFilePickerLauncher(
+                    mode = FileKitMode.Multiple(),
+                    type = FileKitType.File(extensions = listOf("pem"))
+                ) { files ->
+                    coroutineScope.launch {
+                        files?.forEachIndexed { idx, file ->
+                            val content = file.readString()
+                            viewModel.importIacaCertificate(
+                                pemString = content,
+                                onSuccess = {
+                                    showToast("Certificate ${idx + 1} imported successfully")
+                                },
+                                onError = {
+                                    showToast("Importing ${idx + 1}th certificate failed")
+                                }
+                            )
+                        }
+                    }
+                }
+
+                ActionButton(
+                    text = "Import IACA Certificates", onClick = {
+                        pemFilePicker.launch()
                     })
 
                 ActionButton(
