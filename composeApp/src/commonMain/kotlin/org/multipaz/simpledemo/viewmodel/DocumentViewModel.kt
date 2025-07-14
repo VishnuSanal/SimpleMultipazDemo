@@ -163,13 +163,12 @@ class DocumentViewModel {
         }
     }
 
-    fun initReaderCredentials(
+    fun initReaderKeys(
         onSuccess: () -> Unit,
         onError: (Exception) -> Unit
     ) {
         CoroutineScope(Dispatchers.Default).launch {
             try {
-
                 val keyStorage = storage.getTable(
                     StorageTableSpec(
                         name = "TestAppKeys",
@@ -179,10 +178,8 @@ class DocumentViewModel {
                 )
 
                 val now = Clock.System.now()
-
                 val validFrom = now
                 val validUntil = now + 365.days
-
                 val certsValidFrom = validFrom
                 val certsValidUntil = validUntil
 
@@ -272,6 +269,20 @@ class DocumentViewModel {
                     crlUrl = "https://vishnusanal.github.io/multipaz/iaca/crl"
                 )
 
+                onSuccess()
+            } catch (e: Exception) {
+                e.printStackTrace()
+                onError(e)
+            }
+        }
+    }
+
+    fun initTrustManager(
+        onSuccess: () -> Unit,
+        onError: (Exception) -> Unit
+    ) {
+        CoroutineScope(Dispatchers.Default).launch {
+            try {
                 readerTrustManager = LocalTrustManager(
                     partitionId = "BuiltInTrustedReaders",
                     storage = Platform.storage,
@@ -316,12 +327,7 @@ class DocumentViewModel {
                         metadata = TrustPointMetadata(displayName = "Vishnu's Simple Multipaz Demo Issuer"),
                     )
                 }
-
-//                val signedVical =
-//                    SignedVical.parse(Res.readBytes("files/20250225 RDW Test Vical.vical"))
-//                val vicalTrustManager = VicalTrustManager(signedVical)
                 issuerTrustManager = builtInIssuerTrustManager
-//                    CompositeTrustManager(listOf(vicalTrustManager, builtInIssuerTrustManager))
 
                 onSuccess()
             } catch (e: Exception) {

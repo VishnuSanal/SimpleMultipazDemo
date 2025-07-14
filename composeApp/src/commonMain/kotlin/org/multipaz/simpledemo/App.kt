@@ -133,9 +133,19 @@ fun App(promptModel: PromptModel) {
                 ActionButton(
                     text = "Initialize Keys", onClick = {
                         coroutineScope.launch {
-                            viewModel.initReaderCredentials(
+                            viewModel.initReaderKeys(
                                 onSuccess = { showToast("Initialized keys successfully") },
                                 onError = { showToast("Initialize keys failed") }
+                            )
+                        }
+                    })
+
+                ActionButton(
+                    text = "Initialize TrustManager", onClick = {
+                        coroutineScope.launch {
+                            viewModel.initTrustManager(
+                                onSuccess = { showToast("Initialized TrustManager successfully") },
+                                onError = { showToast("Initialize TrustManager failed") }
                             )
                         }
                     })
